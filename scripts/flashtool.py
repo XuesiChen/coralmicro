@@ -33,6 +33,16 @@ import tempfile
 import textwrap
 import time
 import usb.core
+import usb.util
+import usb.backend.libusb1
+import ctypes
+
+# Tell pyusb exactly where the libusb shared library is
+path = "/opt/homebrew/lib/libusb-1.0.dylib"
+if not os.path.exists(path):
+    path = "/usr/local/lib/libusb-1.0.dylib"  # fallback for Intel Macs
+
+backend = usb.backend.libusb1.get_backend(find_library=lambda x: path)
 
 
 class ArduinoBar(Progress):
@@ -176,22 +186,22 @@ def is_coral_micro_connected(serial_number):
 
 def is_elfloader_connected(serial_number):
   for device in usb.core.find(idVendor=ELFLOADER_VID, idProduct=ELFLOADER_PID,
-                              find_all=True):
+                              find_all=True, backend=backend):
     if not serial_number or device.serial_number == serial_number:
       return True
   for device in usb.core.find(idVendor=ELFLOADER_VID, idProduct=ELFLOADER_OLD_PID,
-                              find_all=True):
+                              find_all=True, backend=backend):
     if not serial_number or device.serial_number == serial_number:
       return True
   return False
 
 
 def is_sdp_connected():
-  return bool(usb.core.find(idVendor=SDP_VID, idProduct=SDP_PID))
+  return bool(usb.core.find(idVendor=SDP_VID, idProduct=SDP_PID, backend=backend))
 
 
 def is_flashloader_connected():
-  return bool(usb.core.find(idVendor=FLASHLOADER_VID, idProduct=FLASHLOADER_PID))
+  return bool(usb.core.find(idVendor=FLASHLOADER_VID, idProduct=FLASHLOADER_PID, backend=backend))
 
 
 def EnumerateSDP():
