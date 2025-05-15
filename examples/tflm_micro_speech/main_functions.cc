@@ -26,6 +26,8 @@ limitations under the License.
 #include "third_party/tflite-micro/tensorflow/lite/micro/system_setup.h"
 #include "third_party/tflite-micro/tensorflow/lite/schema/schema_generated.h"
 
+#include "libs/base/timer.h" 
+
 // Globals, used for compatibility with Arduino-style sketches.
 namespace {
 tflite::ErrorReporter* error_reporter = nullptr;
@@ -39,7 +41,8 @@ int32_t previous_time = 0;
 // Create an area of memory to use for input, output, and intermediate arrays.
 // The size of this will depend on the model you're using, and may need to be
 // determined by experimentation.
-constexpr int kTensorArenaSize = 10 * 1024;
+constexpr int kTensorArenaSize = 24 * 1024;
+// constexpr int kTensorArenaSize = 10 * 1024;
 uint8_t tensor_arena[kTensorArenaSize] __attribute__((aligned(16)));
 int8_t feature_buffer[kFeatureElementCount];
 int8_t* model_input_buffer = nullptr;
@@ -47,6 +50,7 @@ int8_t* model_input_buffer = nullptr;
 
 // The name of this function is important for Arduino compatibility.
 void setup() {
+  coralmicro::TimerInit();
   tflite::InitializeTarget();
 
   // Set up logging. Google style is to avoid globals or statics because of
@@ -74,8 +78,11 @@ void setup() {
   //
   // tflite::AllOpsResolver resolver;
   // NOLINTNEXTLINE(runtime-global-variables)
-  static tflite::MicroMutableOpResolver<4> micro_op_resolver(error_reporter);
-  if (micro_op_resolver.AddDepthwiseConv2D() != kTfLiteOk) {
+  static tflite::MicroMutableOpResolver<11> micro_op_resolver(error_reporter);
+  if (micro_op_resolver.AddConv2D() != kTfLiteOk) {
+    return;
+  }
+  if (micro_op_resolver.AddQuantize() != kTfLiteOk) { 
     return;
   }
   if (micro_op_resolver.AddFullyConnected() != kTfLiteOk) {
@@ -85,6 +92,24 @@ void setup() {
     return;
   }
   if (micro_op_resolver.AddReshape() != kTfLiteOk) {
+    return;
+  }
+  if (micro_op_resolver.AddMaxPool2D() != kTfLiteOk) {
+    return;
+  }
+  if (micro_op_resolver.AddDepthwiseConv2D() != kTfLiteOk) {
+    return;
+  }
+  if (micro_op_resolver.AddAveragePool2D() != kTfLiteOk) {  
+  return;
+  }
+  if (micro_op_resolver.AddMul() != kTfLiteOk) {
+    return;
+  }
+  if (micro_op_resolver.AddAdd() != kTfLiteOk) {
+    return;
+  }
+  if (micro_op_resolver.AddRelu() != kTfLiteOk) {
     return;
   }
 
@@ -102,12 +127,18 @@ void setup() {
 
   // Get information about the memory area to use for the model's input.
   model_input = interpreter->input(0);
-  if ((model_input->dims->size != 2) || (model_input->dims->data[0] != 1) ||
-      (model_input->dims->data[1] !=
-       (kFeatureSliceCount * kFeatureSliceSize)) ||
-      (model_input->type != kTfLiteInt8)) {
+  // if ((model_input->dims->size != 2) || (model_input->dims->data[0] != 1) ||
+  //     (model_input->dims->data[1] !=
+  //      (kFeatureSliceCount * kFeatureSliceSize)) ||
+  //     (model_input->type != kTfLiteInt8)) {
+  //   TF_LITE_REPORT_ERROR(error_reporter,
+  //                        "Bad input tensor parameters in model");
+  //   return;
+    if ((model_input->dims->size != 4) || (model_input->dims->data[0] != 1) ||
+      (model_input->dims->data[1] != 49) || (model_input->dims->data[2] != 10) ||
+      (model_input->dims->data[3] != 1) || (model_input->type != kTfLiteInt8)) {
     TF_LITE_REPORT_ERROR(error_reporter,
-                         "Bad input tensor parameters in model");
+                        "Bad input tensor parameters in model");
     return;
   }
   model_input_buffer = model_input->data.int8;
@@ -149,7 +180,14 @@ void loop() {
   }
 
   // Run the model on the spectrogram input and make sure it succeeds.
+  uint64_t start_time = coralmicro::TimerMicros();
   TfLiteStatus invoke_status = interpreter->Invoke();
+  uint64_t end_time = coralmicro::TimerMicros();
+
+  uint64_t inference_time = end_time - start_time;
+
+  TF_LITE_REPORT_ERROR(error_reporter, "Inference time: %d us", static_cast<int>(inference_time));
+
   if (invoke_status != kTfLiteOk) {
     TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed");
     return;
