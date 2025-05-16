@@ -127,19 +127,19 @@ void setup() {
 
   // Get information about the memory area to use for the model's input.
   model_input = interpreter->input(0);
-  // if ((model_input->dims->size != 2) || (model_input->dims->data[0] != 1) ||
-  //     (model_input->dims->data[1] !=
-  //      (kFeatureSliceCount * kFeatureSliceSize)) ||
-  //     (model_input->type != kTfLiteInt8)) {
-  //   TF_LITE_REPORT_ERROR(error_reporter,
-  //                        "Bad input tensor parameters in model");
-  //   return;
-    if ((model_input->dims->size != 4) || (model_input->dims->data[0] != 1) ||
-      (model_input->dims->data[1] != 49) || (model_input->dims->data[2] != 10) ||
-      (model_input->dims->data[3] != 1) || (model_input->type != kTfLiteInt8)) {
+  if ((model_input->dims->size != 2) || (model_input->dims->data[0] != 1) ||
+      (model_input->dims->data[1] !=
+       (kFeatureSliceCount * kFeatureSliceSize)) ||
+      (model_input->type != kTfLiteInt8)) {
     TF_LITE_REPORT_ERROR(error_reporter,
-                        "Bad input tensor parameters in model");
+                         "Bad input tensor parameters in model");
     return;
+    // if ((model_input->dims->size != 4) || (model_input->dims->data[0] != 1) ||
+    //   (model_input->dims->data[1] != 49) || (model_input->dims->data[2] != 10) ||
+    //   (model_input->dims->data[3] != 1) || (model_input->type != kTfLiteInt8)) {
+    // TF_LITE_REPORT_ERROR(error_reporter,
+    //                     "Bad input tensor parameters in model");
+    // return;
   }
   model_input_buffer = model_input->data.int8;
 
