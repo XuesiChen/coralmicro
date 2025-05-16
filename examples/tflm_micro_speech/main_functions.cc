@@ -158,6 +158,7 @@ void setup() {
 
 // The name of this function is important for Arduino compatibility.
 void loop() {
+  uint64_t preprocessing_start_time = coralmicro::TimerMicros();
   // Fetch the spectrogram for the current time.
   const int32_t current_time = LatestAudioTimestamp();
   int how_many_new_slices = 0;
@@ -178,15 +179,21 @@ void loop() {
   for (int i = 0; i < kFeatureElementCount; i++) {
     model_input_buffer[i] = feature_buffer[i];
   }
+  uint64_t preprocessing_end_time = coralmicro::TimerMicros();
+  uint64_t preprocessing_time = preprocessing_end_time - preprocessing_start_time;
+  TF_LITE_REPORT_ERROR(error_reporter, "Preprocessing time: %d us",
+                       static_cast<int>(preprocessing_time));
 
   // Run the model on the spectrogram input and make sure it succeeds.
-  uint64_t start_time = coralmicro::TimerMicros();
+  uint64_t inference_start_time = coralmicro::TimerMicros();
   TfLiteStatus invoke_status = interpreter->Invoke();
-  uint64_t end_time = coralmicro::TimerMicros();
+  uint64_t inference_end_time = coralmicro::TimerMicros();
 
-  uint64_t inference_time = end_time - start_time;
+  uint64_t inference_time = inference_end_time - inference_start_time;
 
   TF_LITE_REPORT_ERROR(error_reporter, "Inference time: %d us", static_cast<int>(inference_time));
+
+  uint64_t postprocessing_start_time = coralmicro::TimerMicros();
 
   if (invoke_status != kTfLiteOk) {
     TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed");
@@ -211,4 +218,9 @@ void loop() {
   // own function for a real application.
   RespondToCommand(error_reporter, current_time, found_command, score,
                    is_new_command);
+
+  uint64_t postprocessing_end_time = coralmicro::TimerMicros();
+  uint64_t postprocessing_time = postprocessing_end_time - postprocessing_start_time;
+  TF_LITE_REPORT_ERROR(error_reporter, "Postprocessing time: %d us",
+                       static_cast<int>(postprocessing_time));
 }
