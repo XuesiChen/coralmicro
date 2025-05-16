@@ -25,6 +25,8 @@ limitations under the License.
 #include "tensorflow/lite/micro/system_setup.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 
+#include "libs/base/timer.h" 
+
 // Globals, used for compatibility with Arduino-style sketches.
 namespace {
 tflite::ErrorReporter* error_reporter = nullptr;
@@ -47,6 +49,7 @@ static uint8_t tensor_arena[kTensorArenaSize];
 
 // The name of this function is important for Arduino compatibility.
 void setup() {
+  coralmicro::TimerInit();
   tflite::InitializeTarget();
 
   // Set up logging. Google style is to avoid globals or statics because of
@@ -106,15 +109,28 @@ void setup() {
 
 // The name of this function is important for Arduino compatibility.
 void loop() {
+  uint64_t preprocessing_start_time = coralmicro::TimerMicros();
   // Get image from provider.
   if (kTfLiteOk != GetImage(error_reporter, kNumCols, kNumRows, kNumChannels,
                             input->data.int8)) {
     printf("Image capture failed.\r\n");
   }
+  uint64_t preprocessing_end_time = coralmicro::TimerMicros();
+  uint64_t preprocessing_time = preprocessing_end_time - preprocessing_start_time;
+  printf("Preprocessing time: %d us\r\n", static_cast<int>(preprocessing_time));
 
   // Run the model on this input and make sure it succeeds.
-  if (kTfLiteOk != interpreter->Invoke()) {
-    printf("Invoke failed.\r\n");
+  uint64_t inference_start_time = coralmicro::TimerMicros();
+  TfLiteStatus invoke_status = interpreter->Invoke();
+  uint64_t inference_end_time = coralmicro::TimerMicros();
+
+  uint64_t inference_time = inference_end_time - inference_start_time;
+  printf("Inference time: %d us\r\n", static_cast<int>(inference_time));
+
+  uint64_t postprocessing_start_time = coralmicro::TimerMicros();
+  if (invoke_status != kTfLiteOk) {
+    TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed");
+    return;
   }
 
   TfLiteTensor* output = interpreter->output(0);
@@ -123,4 +139,9 @@ void loop() {
   int8_t person_score = output->data.uint8[kPersonIndex];
   int8_t no_person_score = output->data.uint8[kNotAPersonIndex];
   RespondToDetection(error_reporter, person_score, no_person_score);
+
+  uint64_t postprocessing_end_time = coralmicro::TimerMicros();
+  uint64_t postprocessing_time = postprocessing_end_time - postprocessing_start_time;
+  printf("Postprocessing time: %d us\r\n",
+         static_cast<int>(postprocessing_time));
 }
