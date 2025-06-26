@@ -51,15 +51,20 @@ inline constexpr int kYamnetFeatureSliceDurationMs = 25;
 inline constexpr int kKeywordDetectorSampleRate = 16000;
 inline constexpr int kKeywordDetectorSampleRateMs =
     kKeywordDetectorSampleRate / 1000;
-inline constexpr int kKeywordDetectorDurationMs = 2000;
+inline constexpr int kKeywordDetectorDurationMs = 40;
+// inline constexpr int kKeywordDetectorDurationMs = 2000;
 inline constexpr int kKeywordDetectorAudioSize =
     kKeywordDetectorSampleRate * kKeywordDetectorDurationMs / 1000;
-inline constexpr int kKeywordDetectorFeatureSliceSize = 32;
-inline constexpr int kKeywordDetectorFeatureSliceCount = 198;
+inline constexpr int kKeywordDetectorFeatureSliceSize = 10;
+// inline constexpr int kKeywordDetectorFeatureSliceSize = 32;
+inline constexpr int kKeywordDetectorFeatureSliceCount = 128;
+// inline constexpr int kKeywordDetectorFeatureSliceCount = 198;
 inline constexpr int kKeywordDetectorFeatureElementCount =
     (kKeywordDetectorFeatureSliceSize * kKeywordDetectorFeatureSliceCount);
-inline constexpr int kKeywordDetectorFeatureSliceStrideMs = 10;
-inline constexpr int kKeywordDetectorFeatureSliceDurationMs = 25;
+inline constexpr int kKeywordDetectorFeatureSliceStrideMs = 20;
+// inline constexpr int kKeywordDetectorFeatureSliceStrideMs = 10;
+inline constexpr int kKeywordDetectorFeatureSliceDurationMs = 30;
+// inline constexpr int kKeywordDetectorFeatureSliceDurationMs = 25;
 
 // Sets up the MicroMutableOpResolver with ops required for YamNet.
 //

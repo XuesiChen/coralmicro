@@ -15,8 +15,10 @@
 add_executable_m7(classify_speech
     classify_speech.cc
     DATA
-    ${CMAKE_SOURCE_DIR}/models/voice_commands_v0.7_edgetpu.tflite
-    ${CMAKE_SOURCE_DIR}/models/labels_gc2.raw.txt
+    ${CMAKE_SOURCE_DIR}/models/kws_mlperftiny_og_edgetpu.tflite
+    # ${CMAKE_SOURCE_DIR}/models/voice_commands_v0.7_edgetpu.tflite
+    ${CMAKE_SOURCE_DIR}/models/labels_kws_mlperftiny_og.raw.txt
+    # ${CMAKE_SOURCE_DIR}/models/labels_gc2.raw.txt
 )
 
 target_link_libraries(classify_speech

@@ -44,8 +44,10 @@ constexpr int kAudioBufferSize =
 
 constexpr float kThreshold = 0.3;
 constexpr int kTopK = 5;
-constexpr char kModelName[] = "/models/voice_commands_v0.7_edgetpu.tflite";
-constexpr char kLabelsName[] = "/models/labels_gc2.raw.txt";
+// constexpr char kModelName[] = "/models/voice_commands_v0.7_edgetpu.tflite";
+constexpr char kModelName[] = "/models/kws_mlperftiny_og_edgetpu.tflite";
+// constexpr char kLabelsName[] = "/models/labels_gc2.raw.txt";
+constexpr char kLabelsName[] = "/models/labels_kws_mlperftiny_og.raw.txt";
 
 std::array<int16_t, tensorflow::kKeywordDetectorAudioSize> audio_input;
 std::vector<std::string> labels;
@@ -54,21 +56,21 @@ std::vector<std::string> labels;
 // populated with raw audio input.
 void run(tflite::MicroInterpreter* interpreter, FrontendState* frontend_state) {
   auto input_tensor = interpreter->input_tensor(0);
-  auto preprocess_start = TimerMillis();
+  auto preprocess_start = TimerMicros();
   tensorflow::KeywordDetectorPreprocessInput(audio_input.data(), input_tensor,
                                              frontend_state);
   // Reset frontend state.
   FrontendReset(frontend_state);
-  auto preprocess_end = TimerMillis();
+  auto preprocess_end = TimerMicros();
   if (interpreter->Invoke() != kTfLiteOk) {
     printf("Failed to invoke on test input\r\n");
     vTaskSuspend(nullptr);
   }
 
-  auto current_time = TimerMillis();
+  auto current_time = TimerMicros();
   printf(
-      "Keyword Detector preprocess time: %lums, invoke time: %lums, total: "
-      "%lums\r\n",
+      "Keyword Detector preprocess time: %luus, invoke time: %luus, total: "
+      "%luus\r\n",
       static_cast<uint32_t>(preprocess_end - preprocess_start),
       static_cast<uint32_t>(current_time - preprocess_end),
       static_cast<uint32_t>(current_time - preprocess_start));
@@ -164,7 +166,7 @@ void run(tflite::MicroInterpreter* interpreter, FrontendState* frontend_state) {
         });
     run(&interpreter, &frontend_state);
 
-    // Delay 2000ms to rate limit the TPU version.
+    // Delay 2000ms(default) to rate limit the TPU version.
     vTaskDelay(pdMS_TO_TICKS(tensorflow::kKeywordDetectorDurationMs));
   }
 }
