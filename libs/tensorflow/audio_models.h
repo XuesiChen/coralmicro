@@ -63,6 +63,32 @@ enum AudioModel {
 // inline constexpr int kKeywordDetectorFeatureSliceDurationMs = 25;
 
 // MLPerf Tiny KWS model constants
+// inline constexpr int kYamnetSampleRate = 16000;
+// inline constexpr int kYamnetSampleRateMs = kYamnetSampleRate / 1000;
+// inline constexpr int kYamnetDurationMs = 975;
+// inline constexpr int kYamnetAudioSize =
+//     kYamnetSampleRate * kYamnetDurationMs / 1000;
+// inline constexpr int kYamnetFeatureSliceSize = 64;
+// inline constexpr int kYamnetFeatureSliceCount = 96;
+// inline constexpr int kYamnetFeatureElementCount =
+//     (kYamnetFeatureSliceSize * kYamnetFeatureSliceCount);
+// inline constexpr int kYamnetFeatureSliceStrideMs = 10;
+// inline constexpr int kYamnetFeatureSliceDurationMs = 25;
+
+// inline constexpr int kKeywordDetectorSampleRate = 16000;
+// inline constexpr int kKeywordDetectorSampleRateMs =
+//     kKeywordDetectorSampleRate / 1000;
+// inline constexpr int kKeywordDetectorDurationMs = 40;
+// inline constexpr int kKeywordDetectorAudioSize =
+//     kKeywordDetectorSampleRate * kKeywordDetectorDurationMs / 1000;
+// inline constexpr int kKeywordDetectorFeatureSliceSize = 10;
+// inline constexpr int kKeywordDetectorFeatureSliceCount = 128;
+// inline constexpr int kKeywordDetectorFeatureElementCount =
+//     (kKeywordDetectorFeatureSliceSize * kKeywordDetectorFeatureSliceCount);
+// inline constexpr int kKeywordDetectorFeatureSliceStrideMs = 20;
+// inline constexpr int kKeywordDetectorFeatureSliceDurationMs = 30;
+
+// Arduino KWS model constants
 inline constexpr int kYamnetSampleRate = 16000;
 inline constexpr int kYamnetSampleRateMs = kYamnetSampleRate / 1000;
 inline constexpr int kYamnetDurationMs = 975;
@@ -81,8 +107,8 @@ inline constexpr int kKeywordDetectorSampleRateMs =
 inline constexpr int kKeywordDetectorDurationMs = 40;
 inline constexpr int kKeywordDetectorAudioSize =
     kKeywordDetectorSampleRate * kKeywordDetectorDurationMs / 1000;
-inline constexpr int kKeywordDetectorFeatureSliceSize = 10;
-inline constexpr int kKeywordDetectorFeatureSliceCount = 128;
+inline constexpr int kKeywordDetectorFeatureSliceSize = 40;
+inline constexpr int kKeywordDetectorFeatureSliceCount = 49;
 inline constexpr int kKeywordDetectorFeatureElementCount =
     (kKeywordDetectorFeatureSliceSize * kKeywordDetectorFeatureSliceCount);
 inline constexpr int kKeywordDetectorFeatureSliceStrideMs = 20;

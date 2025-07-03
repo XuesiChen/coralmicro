@@ -1,0 +1,4 @@
+silence
+unknown
+yes
+no
