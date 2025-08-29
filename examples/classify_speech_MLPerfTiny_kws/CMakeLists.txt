@@ -13,7 +13,7 @@
 # limitations under the License.
 
 add_executable_m7(classify_speech_MLperfTiny_kws
-    classify_speech_MLperfTiny_kws.cc
+    classify_speech_MLPerfTiny_kws.cc
     DATA
     ${CMAKE_SOURCE_DIR}/models/kws_mlperftiny_og_edgetpu.tflite
     ${CMAKE_SOURCE_DIR}/models/labels_kws_mlperftiny_og.raw.txt
