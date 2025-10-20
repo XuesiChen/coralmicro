@@ -15,6 +15,10 @@
 #include <vector>
 #include "libs/base/filesystem.h"
 #include "libs/base/led.h"
+// --- code dani added : start ---
+#include "libs/base/timer.h"
+#include <math.h>
+// --- code dani added : end ---
 #include "libs/camera/camera.h"
 #include "libs/tensorflow/detection.h"
 #include "libs/tensorflow/utils.h"
@@ -37,7 +41,7 @@
 namespace coralmicro {
 namespace {
 constexpr char kModelPath[] =
-    "/models/ssd_mobilenet_v2_face_quant_postprocess_edgetpu.tflite";
+    "/models/vww_96_int8_edgetpu.tflite";
 constexpr int kTopK = 5;
 constexpr float kThreshold = 0.5;
 
@@ -46,8 +50,11 @@ constexpr int kTensorArenaSize = 8 * 1024 * 1024;
 STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
 
 [[noreturn]] void Main() {
+  // --- code dani added : start ---
+  coralmicro::TimerInit();
+  // --- code dani added : end ---
   
-  printf("Face Detection Example!\r\n");
+  printf("Binary Person Detection Example!\r\n");
   // Turn on Status LED to show the board is on.
   LedSet(Led::kStatus, true);
 
@@ -64,10 +71,14 @@ STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
   }
 
   tflite::MicroErrorReporter error_reporter;
-  tflite::MicroMutableOpResolver<3> resolver;
+  //tflite::MicroMutableOpResolver<3> resolver;
+  //resolver.AddDequantize();
+  //resolver.AddDetectionPostprocess();
+  //resolver.AddCustom(kCustomOp, RegisterCustomOp());
+  // I replaces the past four lines with the next three lines:
+  tflite::MicroMutableOpResolver<2> resolver;
   resolver.AddDequantize();
-  resolver.AddDetectionPostprocess();
-  resolver.AddCustom(kCustomOp, RegisterCustomOp());
+  resolver.AddCustom(kCustomOp, RegisterCustomOp()); 
 
   tflite::MicroInterpreter interpreter(tflite::GetModel(model.data()), resolver,
                                        tensor_arena, kTensorArenaSize,
@@ -90,11 +101,17 @@ STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
   int model_height = input_tensor->dims->data[1];
   int model_width = input_tensor->dims->data[2];
 
-  printf("model_height: %d\r\n",model_height);
-  printf("model_width: %d\r\n",model_width);
+  printf("Input tensor type: %d\r\n", input_tensor->type);
+  printf("Model expects: %d x %d x %d\r\n",
+       input_tensor->dims->data[1],
+       input_tensor->dims->data[2],
+       input_tensor->dims->data[3]);
 
   while (true) {
+    // --- code dani added : start ---
     // -- PRE-PROCESSING : --
+    auto preprocessing_start_us = coralmicro::TimerMicros();
+    // --- code dani added : end ---
     CameraFrameFormat fmt{CameraFormat::kRgb,
                           CameraFilterMethod::kBilinear,
                           CameraRotation::k270,
@@ -106,22 +123,49 @@ STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
       printf("Failed to capture image\r\n");
       vTaskSuspend(nullptr);
     }
+    // --- code dani added : start ---
+    auto preprocessing_end_us = coralmicro::TimerMicros();
     // -- INFERENCE : --
+    auto inference_start_us = coralmicro::TimerMicros();
+    // --- code dani added : end ---
     if (interpreter.Invoke() != kTfLiteOk) {
       printf("Failed to invoke\r\n");
       vTaskSuspend(nullptr);
     }
+    // --- code dani added : start ---
+    auto inference_end_us = coralmicro::TimerMicros();
     // -- POST-PROCESSING : --
-    auto results = tensorflow::GetDetectionResults(&interpreter, kThreshold, kTopK);
-    if (!results.empty()) {
-      printf("Found %d face(s):\r\n%s\r\n", results.size(),
-             tensorflow::FormatDetectionOutput(results).c_str());
+    auto postprocessing_start_us = coralmicro::TimerMicros();
+    // Visual Wake Words is a binary classifier:
+    // Output tensor is [score for "no person", score for "person"]
+    auto* output = interpreter.output_tensor(0);
+    //int8_t no_person_score = output->data.int8[0];
+    //int8_t person_score = output->data.int8[1];
+    int8_t raw_no_person = output->data.int8[0];
+    int8_t raw_person = output->data.int8[1];
+    float scale = output->params.scale;
+    int zero_point = output->params.zero_point;
+    float prob_no_person = (raw_no_person - zero_point) * scale;
+    float prob_person = (raw_person - zero_point) * scale;
+    auto postprocessing_end_us = coralmicro::TimerMicros();
+    //printf("probabilities: no_person=\t%.3f\t, person=\t%.3f\r\n", prob_no_person, prob_person);
+    if (prob_person > 0.5f) {
+      printf("PERSON DETECTED!\r\n");
       LedSet(Led::kUser, true);
     } else {
       LedSet(Led::kUser, false);
     }
-    // --- code dani added : start ---
-    printf("this is the new example!!! \r\n");
+    printf("Timing (us):   Preprocessing=%lu\t, Inference=%lu\t, Postprocessing=%lu\r\n",
+      static_cast<uint32_t>(preprocessing_end_us - preprocessing_start_us), static_cast<uint32_t>(inference_end_us - inference_start_us), static_cast<uint32_t>(postprocessing_end_us - postprocessing_start_us));
+    /*
+    printf("|----------------------------------------------------------------------------------\r\n");
+    printf("|               | Preprocessing       | Inference           | Postprocessing      |\r\n");
+    printf("|---------------|---------------------|---------------------|---------------------|\r\n");
+    printf("| Start Time:   | %-20lu| %-20lu| %-20lu|\r\n",static_cast<uint32_t>(preprocessing_start_us),static_cast<uint32_t>(inference_start_us),static_cast<uint32_t>(postprocessing_start_us));
+    printf("|---------------|---------------------|---------------------|---------------------|\r\n");
+    printf("| End Time:     | %-20lu| %-20lu| %-20lu|\r\n",static_cast<uint32_t>(preprocessing_end_us),static_cast<uint32_t>(inference_end_us),static_cast<uint32_t>(postprocessing_end_us));
+    printf("-----------------------------------------------------------------------------------\r\n");
+    */
     // --- code dani added : end ---
   }
 }
