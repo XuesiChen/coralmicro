@@ -15,9 +15,6 @@
 #include <vector>
 #include "libs/base/filesystem.h"
 #include "libs/base/led.h"
-// --- code dani added : start ---
-#include "libs/base/timer.h"
-// --- code dani added : end ---
 #include "libs/camera/camera.h"
 #include "libs/tensorflow/detection.h"
 #include "libs/tensorflow/utils.h"
@@ -49,9 +46,6 @@ constexpr int kTensorArenaSize = 8 * 1024 * 1024;
 STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
 
 [[noreturn]] void Main() {
-  // --- code dani added : start ---
-  coralmicro::TimerInit();
-  // --- code dani added : end ---
   
   printf("Face Detection Example!\r\n");
   // Turn on Status LED to show the board is on.
@@ -96,11 +90,11 @@ STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
   int model_height = input_tensor->dims->data[1];
   int model_width = input_tensor->dims->data[2];
 
+  printf("model_height: %d\r\n",model_height);
+  printf("model_width: %d\r\n",model_width);
+
   while (true) {
-    // --- code dani added : start ---
     // -- PRE-PROCESSING : --
-    auto preprocessing_start_us = coralmicro::TimerMicros();
-    // --- code dani added : end ---
     CameraFrameFormat fmt{CameraFormat::kRgb,
                           CameraFilterMethod::kBilinear,
                           CameraRotation::k270,
@@ -112,23 +106,14 @@ STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
       printf("Failed to capture image\r\n");
       vTaskSuspend(nullptr);
     }
-    // --- code dani added : start ---
-    auto preprocessing_end_us = coralmicro::TimerMicros();
     // -- INFERENCE : --
-    auto inference_start_us = coralmicro::TimerMicros();
-    // --- code dani added : end ---
     if (interpreter.Invoke() != kTfLiteOk) {
       printf("Failed to invoke\r\n");
       vTaskSuspend(nullptr);
     }
-    // --- code dani added : start ---
-    auto inference_end_us = coralmicro::TimerMicros();
     // -- POST-PROCESSING : --
-    auto postprocessing_start_us = coralmicro::TimerMicros();
     auto results = tensorflow::GetDetectionResults(&interpreter, kThreshold, kTopK);
-    auto postprocessing_end_us = coralmicro::TimerMicros();
-    // --- code dani added : end ---
-    if (!results.empty()) { // I (Dani) changed this line in accordance to the line I added above.
+    if (!results.empty()) {
       printf("Found %d face(s):\r\n%s\r\n", results.size(),
              tensorflow::FormatDetectionOutput(results).c_str());
       LedSet(Led::kUser, true);
@@ -136,17 +121,7 @@ STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
       LedSet(Led::kUser, false);
     }
     // --- code dani added : start ---
-    printf("Timing (us):   Preprocessing=%lu\t, Inference=%lu\t, Postprocessing=%lu\r\n",
-      static_cast<uint32_t>(preprocessing_end_us - preprocessing_start_us), static_cast<uint32_t>(inference_end_us - inference_start_us), static_cast<uint32_t>(postprocessing_end_us - postprocessing_start_us));
-    /*
-    printf("|----------------------------------------------------------------------------------\r\n");
-    printf("|               | Preprocessing       | Inference           | Postprocessing      |\r\n");
-    printf("|---------------|---------------------|---------------------|---------------------|\r\n");
-    printf("| Start Time:   | %-20lu| %-20lu| %-20lu|\r\n",static_cast<uint32_t>(preprocessing_start_us),static_cast<uint32_t>(inference_start_us),static_cast<uint32_t>(postprocessing_start_us));
-    printf("|---------------|---------------------|---------------------|---------------------|\r\n");
-    printf("| End Time:     | %-20lu| %-20lu| %-20lu|\r\n",static_cast<uint32_t>(preprocessing_end_us),static_cast<uint32_t>(inference_end_us),static_cast<uint32_t>(postprocessing_end_us));
-    printf("-----------------------------------------------------------------------------------\r\n");
-    */
+    printf("this is the new example!!! \r\n");
     // --- code dani added : end ---
   }
 }

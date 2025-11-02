@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_executable_m7(classify_speech_MLperfTiny_kws
-    classify_speech_MLPerfTiny_kws.cc
+add_executable_m7(my_example
+    my_example.cc
     DATA
-    ${CMAKE_SOURCE_DIR}/models/kws_mlperftiny_og_edgetpu.tflite
-    ${CMAKE_SOURCE_DIR}/models/labels_kws_mlperftiny_og.raw.txt
+    ${PROJECT_SOURCE_DIR}/models/ssd_mobilenet_v2_face_quant_postprocess_edgetpu.tflite
 )
 
-target_link_libraries(classify_speech_MLperfTiny_kws
+target_link_libraries(my_example
     libs_base-m7_freertos
-    libs_audio_freertos
 )

@@ -11,7 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+/*
+*/
 #include <vector>
 #include "libs/base/filesystem.h"
 #include "libs/base/led.h"
@@ -53,19 +54,20 @@ STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
   coralmicro::TimerInit();
   // --- code dani added : end ---
   
-  printf("Face Detection Example!\r\n");
+  //printf("LoRa Transmitter Example!\r\n");
   // Turn on Status LED to show the board is on.
   LedSet(Led::kStatus, true);
 
   std::vector<uint8_t> model;
   if (!LfsReadFile(kModelPath, &model)) {
-    printf("ERROR: Failed to load %s\r\n", kModelPath);
+    //printf("ERROR: Failed to load %s\r\n", kModelPath);
     vTaskSuspend(nullptr);
   }
 
   auto tpu_context = EdgeTpuManager::GetSingleton()->OpenDevice();
   if (!tpu_context) {
-    printf("ERROR: Failed to get EdgeTpu context\r\n");
+    //printf("ERROR: Fprintf("Found %d face(s):\r\n%s\r\n", results.size(),
+    //         tensorflow::FormatDetectionOutput(results).c_str());iled to get EdgeTpu context\r\n");
     vTaskSuspend(nullptr);
   }
 
@@ -79,12 +81,12 @@ STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
                                        tensor_arena, kTensorArenaSize,
                                        &error_reporter);
   if (interpreter.AllocateTensors() != kTfLiteOk) {
-    printf("ERROR: AllocateTensors() failed\r\n");
+    //printf("ERROR: AllocateTensors() failed\r\n");
     vTaskSuspend(nullptr);
   }
 
   if (interpreter.inputs().size() != 1) {
-    printf("ERROR: Model must have only one input tensor\r\n");
+    //printf("ERROR: Model must have only one input tensor\r\n");
     vTaskSuspend(nullptr);
   }
 
@@ -95,6 +97,10 @@ STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
   auto* input_tensor = interpreter.input_tensor(0);
   int model_height = input_tensor->dims->data[1];
   int model_width = input_tensor->dims->data[2];
+
+  // --- code dani added : start ---
+  constexpr int kReceiverAddress = 473;
+  // --- code dani added : end ---
 
   while (true) {
     // --- code dani added : start ---
@@ -109,7 +115,7 @@ STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
                           false,
                           tflite::GetTensorData<uint8_t>(input_tensor)};
     if (!CameraTask::GetSingleton()->GetFrame({fmt})) {
-      printf("Failed to capture image\r\n");
+      //printf("Failed to capture image\r\n");
       vTaskSuspend(nullptr);
     }
     // --- code dani added : start ---
@@ -118,7 +124,7 @@ STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
     auto inference_start_us = coralmicro::TimerMicros();
     // --- code dani added : end ---
     if (interpreter.Invoke() != kTfLiteOk) {
-      printf("Failed to invoke\r\n");
+      //printf("Failed to invoke\r\n");
       vTaskSuspend(nullptr);
     }
     // --- code dani added : start ---
@@ -129,15 +135,28 @@ STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
     auto postprocessing_end_us = coralmicro::TimerMicros();
     // --- code dani added : end ---
     if (!results.empty()) { // I (Dani) changed this line in accordance to the line I added above.
-      printf("Found %d face(s):\r\n%s\r\n", results.size(),
-             tensorflow::FormatDetectionOutput(results).c_str());
+      //printf("Found %d face(s):\r\n%s\r\n", results.size(),
+      //       tensorflow::FormatDetectionOutput(results).c_str());
       LedSet(Led::kUser, true);
     } else {
       LedSet(Led::kUser, false);
+      //printf("Found %d face(s):\r\n%s\r\n", results.size(),
+      //       tensorflow::FormatDetectionOutput(results).c_str());
     }
     // --- code dani added : start ---
-    printf("Timing (us):   Preprocessing=%lu\t, Inference=%lu\t, Postprocessing=%lu\r\n",
-      static_cast<uint32_t>(preprocessing_end_us - preprocessing_start_us), static_cast<uint32_t>(inference_end_us - inference_start_us), static_cast<uint32_t>(postprocessing_end_us - postprocessing_start_us));
+    // send the number of detected faces via lora transmition:
+    int face_count = static_cast<int>(results.size());
+    char payload[16];
+    snprintf(payload, sizeof(payload), "%d", face_count);
+    int data_length = strlen(payload);
+    char cmd[64];
+    snprintf(cmd, sizeof(cmd), "AT+SEND=%d,%d,%s\r\n", kReceiverAddress, data_length, payload);
+    // Send command over UART6 (console)
+    printf("%s", cmd); 
+    // --- code dani added : end ---
+    // --- code dani added : start ---
+    //printf("Timing (us):   Preprocessing=%lu\t, Inference=%lu\t, Postprocessing=%lu\r\n",
+    //  static_cast<uint32_t>(preprocessing_end_us - preprocessing_start_us), static_cast<uint32_t>(inference_end_us - inference_start_us), static_cast<uint32_t>(postprocessing_end_us - postprocessing_start_us));
     /*
     printf("|----------------------------------------------------------------------------------\r\n");
     printf("|               | Preprocessing       | Inference           | Postprocessing      |\r\n");
@@ -147,6 +166,9 @@ STATIC_TENSOR_ARENA_IN_SDRAM(tensor_arena, kTensorArenaSize);
     printf("| End Time:     | %-20lu| %-20lu| %-20lu|\r\n",static_cast<uint32_t>(preprocessing_end_us),static_cast<uint32_t>(inference_end_us),static_cast<uint32_t>(postprocessing_end_us));
     printf("-----------------------------------------------------------------------------------\r\n");
     */
+    // --- code dani added : end ---
+    // --- code dani added : start ---
+    vTaskDelay(pdMS_TO_TICKS(1000)); // wait 1000 ms
     // --- code dani added : end ---
   }
 }
