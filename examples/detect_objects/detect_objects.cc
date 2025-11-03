@@ -18,6 +18,7 @@
 #include "libs/base/filesystem.h"
 #include "libs/base/gpio.h"
 #include "libs/base/led.h"
+#include "libs/base/timer.h"
 #include "libs/camera/camera.h"
 #include "libs/rpc/rpc_http_server.h"
 #include "libs/tensorflow/detection.h"
@@ -88,11 +89,14 @@ bool DetectFromCamera(tflite::MicroInterpreter* interpreter, int model_width,
                         model_height,         false,
                         image->data()};
 
+  // Trigger camera and get frame.
   CameraTask::GetSingleton()->Trigger();
   if (!CameraTask::GetSingleton()->GetFrame({fmt})) return false;
 
+  // copy image data to input tensor
   std::memcpy(tflite::GetTensorData<uint8_t>(input_tensor), image->data(),
               image->size());
+  // Run inference
   if (interpreter->Invoke() != kTfLiteOk) return false;
 
   *results = tensorflow::GetDetectionResults(interpreter, 0.5, 1);
@@ -195,8 +199,12 @@ void DetectConsole(tflite::MicroInterpreter* interpreter) {
       [handle = xTaskGetCurrentTaskHandle()]() { xTaskResumeFromISR(handle); },
       /*debounce_interval_us=*/50 * 1e3);
   while (true) {
-    vTaskSuspend(nullptr);
+    // vTaskSuspend(nullptr); // wait for button press
+    auto start = TimerMicros();
     DetectConsole(&interpreter);
+    auto end = TimerMicros();
+    printf("total loop time: %d us\r\n", static_cast<int>((end - start)));
+    // vTaskDelay(pdMS_TO_TICKS(500));  // run every half second
   }
 }
 
