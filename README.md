@@ -94,3 +94,61 @@ git rebase origin/main
 git submodule update --init --recursive
 ```
 
+<!-- TODO: details about flashing  -->
+
+pip install cmake==3.30.5
+
+```
+make -C build/examples/detect_person_YOLOv8
+python3 scripts/flashtool.py -e detect_person_YOLOv8
+```
+
+```
+make -C build/examples/detect_person_YOLOv8_with_TPU
+python3 scripts/flashtool.py -e detect_person_YOLOv8_with_TPU
+```
+
+```
+make -C build/examples/detect_person_YOLOv8_without_TPU
+python3 scripts/flashtool.py -e detect_person_YOLOv8_without_TPU
+```
+
+```
+make -C build/examples/detect_person_YOLOv8_without_TPU
+python3 scripts/flashtool.py -e detect_person_YOLOv8_without_TPU
+```
+
+```
+make -C build/examples/detect_person_YOLOv8_without_TPU
+python3 scripts/flashtool.py -e detect_person_YOLOv8_without_TPU
+```
+
+```
+make -C build/examples/detect_person_MobileNetV2_with_TPU
+python3 scripts/flashtool.py -e detect_person_MobileNetV2_with_TPU
+```
+
+```
+make -C build/examples/detect_person_MobileNetV2_without_TPU
+python3 scripts/flashtool.py -e detect_person_MobileNetV2_without_TPU
+```
+
+```
+make -C build/examples/detect_person_vww
+python3 scripts/flashtool.py -e detect_person_vww
+```
+
+```
+make -C build/examples/tflm_person_detection_m7
+python3 scripts/flashtool.py -e tflm_person_detection_m7
+```
+
+```
+make -C build/examples/classify_speech_MLPerfTiny_kws
+python3 scripts/flashtool.py -e classify_speech_MLPerfTiny_kws
+```
+
+```
+make -C build/examples/classify_speech_arduino_kws
+python3 scripts/flashtool.py -e classify_speech_arduino_kws
+```

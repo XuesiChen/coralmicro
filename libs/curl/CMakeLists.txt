@@ -84,3 +84,9 @@ target_link_libraries(libs_curl
     libs_nxp_rt1176-sdk_lwip
     libs_nxp_rt1176-sdk-mbedtls
 )
+target_include_directories(libs_curl PUBLIC
+    ${PROJECT_SOURCE_DIR}/libs/curl
+    ${PROJECT_SOURCE_DIR}/third_party/curl/include
+    ${PROJECT_SOURCE_DIR}/third_party/curl/lib
+    ${PROJECT_SOURCE_DIR}/third_party/nxp/rt1176-sdk/middleware/mbedtls/include  # <-- add this
+)

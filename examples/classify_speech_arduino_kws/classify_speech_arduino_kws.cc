@@ -169,7 +169,7 @@ void run(tflite::MicroInterpreter* interpreter, FrontendState* frontend_state) {
   }
 }
 }  // namespace coralmicro
-
+                                                               
 extern "C" void app_main(void* param) {
   (void)param;
   coralmicro::Main();
