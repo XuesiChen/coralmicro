@@ -1,154 +1,141 @@
-# Coral Dev Board Micro source code (coralmicro)
+# Coral Micro Inference Workloads
 
-This repository contains all the code required to build apps for the [Coral Dev
-Board Micro](https://coral.ai/products/dev-board-micro). The Dev Board Micro is
-based on the NXP RT1176 microcontroller (dual-core MCU with Cortex M7 and M4)
-and includes an on-board camera (324x324 px), a microphone, and a Coral Edge TPU
-to accelerate TensorFlow Lite models.
+This guide walks through how to set up, build, and flash each inference workload onto the Coral Dev Board Micro.
 
-The software platform for Dev Board Micro is called `coralmicro` and is based
-on [FreeRTOS](https://www.freertos.org/). It also includes libraries for
-compatibility with the Arduino programming language.
+---
 
-The `coralmicro` build system is based on CMake and includes support for Make
-and Ninja builds. After you build the included projects, you can flash
-them to your board with the included flashtool (`scripts/flashtool.py`).
+## Workloads Overview
 
-![main](https://github.com/google-coral/coralmicro/actions/workflows/ci.yml/badge.svg?event=push)
-![arduino](https://github.com/google-coral/coralmicro/actions/workflows/arduino.yml/badge.svg?event=push)
+| Workload | Hardware | Example Code | Model |
+|---|---|---|---|
+| KWS-S | w/ TPU | `examples/classify_speech_arduino_kws` | `kws_arduino_og_edgetpu.tflite` |
+| KWS-L | w/ TPU | `examples/classify_speech_MLPerfTiny_kws` | `kws_mlperftiny_og_edgetpu.tflite` |
+| PPD-S | w/o TPU | `examples/tflm_person_detection_m7` | `person_detect_model.tflite` |
+| PPD-L | w/ TPU | `examples/detect_person_vww` | `vww_96_int8_edgetpu.tflite` |
+| MobileNetV2 | w/ TPU | `examples/detect_person_MobileNetV2_with_TPU` | `tf2_ssd_mobilenet_v2_coco17_ptq_edgetpu.tflite` |
+| MobileNetV2 | w/o TPU | `examples/detect_person_MobileNetV2_without_TPU` | `tf2_ssd_mobilenet_v2_coco17_ptq.tflite` |
+| YOLOv8 | w/ TPU | `examples/detect_person_YOLOv8_with_TPU` | `best_full_integer_quant_edgetpu.tflite` |
+| YOLOv8 | w/o TPU | `examples/detect_person_YOLOv8_without_TPU` | `best_full_integer_quant.tflite` |
 
+---
 
-## Documentation
+## Prerequisites
 
-+ [Get Started with the Dev Board Micro](https://coral.ai/docs/dev-board-micro/get-started/)
+The Coral Dev Board Micro toolchain is only compatible with macOS and Linux. Windows is not supported.
 
-+ [Get Started with Arduino](https://coral.ai/docs/dev-board-micro/arduino/)
+Install CMake 3.30.5 before building:
 
-+ [Build an out-of-tree project](https://github.com/google-coral/coralmicro-out-of-tree-sample/blob/main/README.md)
+```bash
+pip install cmake==3.30.5
+```
 
-+ [coralmicro API reference](http://coral.ai/docs/reference/micro/)
+---
 
-+ [coralmicro examples](/examples/)
+## Get the Code
 
+1. Clone the `coralmicro` repository along with all submodules:
 
-
-## Get the code
-
-1. Clone `coralmicro` and all submodules:
-
-    ```bash
-    git clone --recurse-submodules -j8 https://github.com/google-coral/coralmicro
-    ```
+```bash
+git clone -b microgreen --recurse-submodules -j8 git@github.com:S4AI-CornellTech/coralmicro.git
+```
+We recommend cloning the repository into ```path_to_microgreen/profiling/inference/```
 
 2. Install the required tools:
 
-    ```bash
-    cd coralmicro && bash setup.sh
-    ```
+```bash
+cd coralmicro && bash setup.sh
+```
 
+---
 
-## Build the code
+## Build the Code
 
-This builds everything in a folder called `build` (or you can specify a
-different path with `-b`, but if you do then you must also specify that path
-everytime you call `flashtool.py`):
+Run the build script from the repository root. This compiles everything into a folder called `build`:
 
 ```bash
 bash build.sh
 ```
 
-## Flash the board
+> You can specify a custom output path with `-b <path>`, but if you do, make sure to pass that same path every time you call `flashtool.py`.
 
-This example blinks the board's green LED:
+---
 
-```bash
-python3 scripts/flashtool.py -e blink_led
-```
+## Flash a Workload
 
-You can see the code at [examples/blink_led/](examples/blink_led/).
+Each workload is built and flashed with two commands: `make` to compile the example, and `flashtool.py` to deploy it to the board. Run these from the repository root.
 
-
-### Reset the board to Serial Downloader
-
-Flashing the Dev Board Micro might fail sometimes and you can usually solve
-it by starting Serial Downloader mode in one of two ways:
-
-+ Hold the User button while you press the Reset button.
-+ Or, hold the User button while you plug in the USB cable.
-
-Then try flashing the board again.
-
-For more details, see the [troubleshooting info on
-coral.ai](https://coral.ai/docs/dev-board-micro/get-started/#serial-downloader).
-
-
-## Update the repo
-
-Use the following commands to keep all coralmicro submodules in sync (rebasing your current branch):
+### KWS-S (w/ TPU)
 
 ```bash
-git fetch origin
-
-git rebase origin/main
-
-git submodule update --init --recursive
+make -C build/examples/classify_speech_arduino_kws
+python3 scripts/flashtool.py -e classify_speech_arduino_kws
 ```
 
-<!-- TODO: details about flashing  -->
+### KWS-L (w/ TPU)
 
-pip install cmake==3.30.5
-
-```
-make -C build/examples/detect_person_YOLOv8
-python3 scripts/flashtool.py -e detect_person_YOLOv8
-```
-
-```
-make -C build/examples/detect_person_YOLOv8_with_TPU
-python3 scripts/flashtool.py -e detect_person_YOLOv8_with_TPU
-```
-
-```
-make -C build/examples/detect_person_YOLOv8_without_TPU
-python3 scripts/flashtool.py -e detect_person_YOLOv8_without_TPU
-```
-
-```
-make -C build/examples/detect_person_YOLOv8_without_TPU
-python3 scripts/flashtool.py -e detect_person_YOLOv8_without_TPU
-```
-
-```
-make -C build/examples/detect_person_YOLOv8_without_TPU
-python3 scripts/flashtool.py -e detect_person_YOLOv8_without_TPU
-```
-
-```
-make -C build/examples/detect_person_MobileNetV2_with_TPU
-python3 scripts/flashtool.py -e detect_person_MobileNetV2_with_TPU
-```
-
-```
-make -C build/examples/detect_person_MobileNetV2_without_TPU
-python3 scripts/flashtool.py -e detect_person_MobileNetV2_without_TPU
-```
-
-```
-make -C build/examples/detect_person_vww
-python3 scripts/flashtool.py -e detect_person_vww
-```
-
-```
-make -C build/examples/tflm_person_detection_m7
-python3 scripts/flashtool.py -e tflm_person_detection_m7
-```
-
-```
+```bash
 make -C build/examples/classify_speech_MLPerfTiny_kws
 python3 scripts/flashtool.py -e classify_speech_MLPerfTiny_kws
 ```
 
+### PPD-S (w/o TPU)
+
+```bash
+make -C build/examples/tflm_person_detection_m7
+python3 scripts/flashtool.py -e tflm_person_detection_m7
 ```
-make -C build/examples/classify_speech_arduino_kws
-python3 scripts/flashtool.py -e classify_speech_arduino_kws
+
+### PPD-L (w/ TPU)
+
+```bash
+make -C build/examples/detect_person_vww
+python3 scripts/flashtool.py -e detect_person_vww
 ```
+
+### MobileNetV2 — w/ TPU
+
+```bash
+make -C build/examples/detect_person_MobileNetV2_with_TPU
+python3 scripts/flashtool.py -e detect_person_MobileNetV2_with_TPU
+```
+
+### MobileNetV2 — w/o TPU
+
+```bash
+make -C build/examples/detect_person_MobileNetV2_without_TPU
+python3 scripts/flashtool.py -e detect_person_MobileNetV2_without_TPU
+```
+
+### YOLOv8 — w/ TPU
+
+```bash
+make -C build/examples/detect_person_YOLOv8_with_TPU
+python3 scripts/flashtool.py -e detect_person_YOLOv8_with_TPU
+```
+
+### YOLOv8 — w/o TPU
+
+```bash
+make -C build/examples/detect_person_YOLOv8_without_TPU
+python3 scripts/flashtool.py -e detect_person_YOLOv8_without_TPU
+```
+
+---
+
+## Checking Output
+
+You can monitor the board's serial output using `screen`:
+ 
+```
+screen /dev/cu.usbmodem2101 115200
+```
+ 
+The device name (e.g. `/dev/cu.usbmodem2101` on macOS, `/dev/ttyACM0` on Linux) may vary — run `ls /dev/cu.usbmodem*` or `ls /dev/ttyACM*` to find yours.
+ 
+For a more reliable setup that captures output from boot, use a USB-to-TTL serial cable instead. See the [Coral Dev Board Micro serial console guide](https://gweb-coral-full.uc.r.appspot.com/docs/dev-board-micro/serial-console/#connect-with-linux) for wiring and setup instructions.
+ 
+---
+
+## Documentation
+
+- [Get Started with the Dev Board Micro](https://coral.ai/docs/dev-board-micro/get-started/)
